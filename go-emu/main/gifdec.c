@@ -429,8 +429,8 @@ render_frame_rect(gd_GIF *gif, uint8_t *buffer)
 				uint8_t g = *(color+1);
 				uint8_t b = *(color+2);
 				
-				buffer[(i+k)*2 + 1] = (r&0xf8) | (g>>5);
 				buffer[(i+k)*2] = ((b & 0xf8)>>3) | ((g & 0xfc) <<3);
+				buffer[(i+k)*2 + 1] = (r&0xf8) | (g>>5);
 				
 				//memcpy(&buffer[(i+k)*3], color, 3);
 			}
@@ -457,7 +457,7 @@ dispose(gd_GIF *gif)
 				uint8_t g = *(bgcolor+1);
 				uint8_t b = *(bgcolor+2);
 				
-				gif->canvas[(i+k)*2] = (r&0xf8) | (g>>5);
+				gif->canvas[(i+k)*2] = ((b & 0xf8)>>3) | ((g & 0xfc) <<3);
 				gif->canvas[(i+k)*2 + 1] = (r&0xf8) | (g>>5);
 			
 				// memcpy(&gif->canvas[(i+k)*3], bgcolor, 3);
