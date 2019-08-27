@@ -14,6 +14,8 @@
 #include <string.h>
 #include <dirent.h>
 
+#include "gifdec.h"
+
 #define ROM_PATH "/sd/roms"
 
 void goemu_ui_choose_file_init(goemu_emu_data_entry *emu) {
@@ -83,6 +85,43 @@ char *goemu_ui_choose_file_getfile(goemu_emu_data_entry *emu)
     sprintf(rc, "%s/%s/%s", ROM_PATH, emu->path, file);
     return rc;
 }
+
+char *goemu_ui_choose_file_getfile_plus_extension(goemu_emu_data_entry *emu, char* extension)
+{
+	char *file = (char*)emu->files.refs[emu->selected];
+	char *dot = strrchr(file,'.'); 
+    //char *rc = (char*)malloc(strlen(emu->path) + 1+ strlen(file)+1+strlen(ROM_PATH)+1);
+	
+	int flen = dot-file;
+	
+	char *rc = (char*)malloc(strlen(emu->path) + 1+ flen +1+strlen(ROM_PATH)+1 + strlen(extension) + 1);
+    sprintf(rc, "%s/%s/%s", ROM_PATH, emu->path, file);
+	sprintf(rc + strlen(emu->path) + 1 + flen + 1 + strlen(ROM_PATH)+1, "%s", extension);
+	
+
+	
+    //sprintf(rc, "%s/%s/%s", ROM_PATH, emu->path, file);
+    return rc;
+	
+	
+    //char *file = (char*)emu->files.refs[emu->selected];
+    //char *dot = strrchr(*file,'.'); 
+	//int flen = *dot - *file;
+	//printf ("flen: %d\r\n", flen);
+	
+//	char *rc = (char*)malloc(strlen(emu->path) + 1+ flen +1+strlen(ROM_PATH)+1 + strlen(extension));
+//    sprintf(rc, "%s/%s/%s", ROM_PATH, emu->path, file);
+//	sprintf(rc + flen, "%s", extension);
+
+	//char *rc = (char*)malloc(strlen(emu->path) + 1+ strlen(file)+1+strlen(ROM_PATH)+1);
+    //sprintf(rc, "%s/%s/%s", ROM_PATH, emu->path, file);
+
+
+    //return rc;
+}
+
+
+
 
 void goemu_ui_choose_file_input(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick, int *last_key_)
 {
@@ -158,7 +197,10 @@ void goemu_ui_choose_file_load(goemu_emu_data_entry *emu)
     if (emu->image_logo == NULL)
     {
         char file[128];
-        sprintf(file, "/sd/odroid/metadata/%s/logo.raw", emu->path_metadata);
+		sprintf(file, "/sd/odroid/metadata/%s/logo.gif", emu->path_metadata);
+		
+        /*sprintf(file, "/sd/odroid/metadata/%s/logo.raw", emu->path_metadata);
+
         FILE *f = fopen(file,"rb");
         if (f)
         {
@@ -169,13 +211,34 @@ void goemu_ui_choose_file_load(goemu_emu_data_entry *emu)
         else
         {
             printf("Image Logo '%s' not found\n", file);
-        }
+        }*/
+		
+		gd_GIF *gif;
+		uint8_t *frame;
+
+		gif = gd_open_gif(file);
+		if (gif) {
+			printf("Gif is: %dx%d\r\n", gif->width, gif->height);
+			if (gif->width==GOEMU_IMAGE_LOGO_WIDTH && gif->height==GOEMU_IMAGE_LOGO_HEIGHT){
+				frame = heap_caps_malloc(gif->width*gif->height*2, MALLOC_CAP_SPIRAM);
+				emu->image_logo = (uint16_t*)frame;
+				int ret = gd_get_frame(gif);
+				if (ret != -1){
+					gd_render_frame(gif, frame);
+				}
+			}
+			gd_close_gif(gif);
+		}else{
+			 printf("Image Logo '%s' not found\n", file);
+		}
     }
     
     if (emu->image_header == NULL)
     {
         char file[128];
-        sprintf(file, "/sd/odroid/metadata/%s/header.raw", emu->path_metadata);
+        sprintf(file, "/sd/odroid/metadata/%s/header.gif", emu->path_metadata);
+
+        /*sprintf(file, "/sd/odroid/metadata/%s/header.raw", emu->path_metadata);
         FILE *f = fopen(file,"rb");
         if (f)
         {
@@ -186,6 +249,25 @@ void goemu_ui_choose_file_load(goemu_emu_data_entry *emu)
         else
         {
             printf("Image Header '%s' not found\n", file);
-        }
+        }*/
+		
+		gd_GIF *gif;
+		uint8_t *frame;
+
+		gif = gd_open_gif(file);
+		if (gif) {
+			printf("Gif is: %dx%d\r\n", gif->width, gif->height);
+			if (gif->width==GOEMU_IMAGE_HEADER_WIDTH && gif->height==GOEMU_IMAGE_HEADER_HEIGHT){
+				frame = heap_caps_malloc(gif->width*gif->height*2, MALLOC_CAP_SPIRAM);
+				emu->image_header = (uint16_t*)frame;
+				int ret = gd_get_frame(gif);
+				if (ret != -1){
+					gd_render_frame(gif, frame);
+				}
+			}
+			gd_close_gif(gif);
+		}else{
+			 printf("Image Header '%s' not found\n", file);
+		}
     }
 }
