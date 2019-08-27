@@ -12,6 +12,11 @@
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
+// Source: https://github.com/lecram/gifdec
+// All of the source code and documentation for gifdec is released into the
+// public domain and provided without warranty of any kind.
+// See gifdec.rm for more infromation.
+
 typedef struct Entry {
     uint16_t length;
     uint16_t prefix;
