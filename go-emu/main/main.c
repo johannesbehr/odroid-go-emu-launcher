@@ -29,6 +29,8 @@
 #include "goemu_data.h"
 #include "goemu_ui.h"
 
+#include "gifdec.h" 
+
 const char* SD_BASE_PATH = "/sd";
 
 void odroid_setup()
@@ -131,6 +133,121 @@ void goemu_start(const char *emu_label)
     esp_restart();
 }
 
+uint8_t load_and_draw_gif(char *buf)
+{
+	uint8_t res = 0;
+	
+	printf("Trying to Load %s ...\r\n", buf);
+	
+	// Check if File exists
+	struct stat st;
+    if (stat(buf, &st) != 0) {
+		printf("File %s does not exists.\r\n", buf);
+        return res;
+    }
+	
+	printf("File %s exists!\r\n", buf);
+	 
+	gd_GIF *gif;
+	uint8_t *frame;
+	
+	gif = gd_open_gif(buf);
+    if (!gif) {
+        printf( "Could not open %s\n", buf);
+        return 1;
+    }
+    //frame = malloc(gif->width * gif->height * 3);
+	
+	printf("Gif is: %dx%d\r\n", gif->width, gif->height);
+	
+	frame = heap_caps_malloc(gif->width * gif->height * 3, MALLOC_CAP_SPIRAM);
+	int ret = gd_get_frame(gif);
+    if (ret != -1){
+        gd_render_frame(gif, frame);
+		
+		if (gif->width<=320 && gif->height<=176)
+            {
+                ili9341_write_frame_rectangleLE(320-gif->width,240-gif->height, gif->width, gif->height, frame);
+				res = 1;
+            }
+	}
+	heap_caps_free(frame);
+	gd_close_gif(gif);
+	
+	printf( "Render done!\r\n");
+	
+	/*
+	FILE *f = fopen(buf, "rb");
+    if (f)
+    {
+            uint16_t width, height;
+            fread(&width, 2, 1, f);
+            fread(&height, 2, 1, f);
+            if (width<=320 && height<=176)
+            {
+                // printf("%X  Romart found: %s   (%dx%d)\n", crc, buf, width, height);
+                uint16_t *img = (uint16_t*)heap_caps_malloc(width*height*2, MALLOC_CAP_SPIRAM);
+                fread(img, 2, width*height, f);
+                
+                ili9341_write_frame_rectangleLE(320-width,240-height, width, height, img);
+                // wait_for_key(last_key);
+                heap_caps_free(img);
+				res = 1;
+            }
+//            else
+            //{
+                // printf("%X  Romart found: %s   (%dx%d) (INVALID SIZE)\n", crc, buf, width, height);
+                //res = 0;
+            //}
+            fclose(f);
+    }*/
+	return res;
+}
+
+uint8_t load_and_draw_art(char *buf)
+{
+	uint8_t res = 0;
+	
+	printf("Trying to Load %s ...\r\n", buf);
+	
+	// Check if File exists
+	struct stat st;
+    if (stat(buf, &st) != 0) {
+		printf("File %s does not exists.\r\n", buf);
+        return res;
+    }
+	
+	printf("File %s exists!\r\n", buf);
+	
+	
+	FILE *f = fopen(buf, "rb");
+    if (f)
+    {
+            uint16_t width, height;
+            fread(&width, 2, 1, f);
+            fread(&height, 2, 1, f);
+            if (width<=320 && height<=176)
+            {
+                // printf("%X  Romart found: %s   (%dx%d)\n", crc, buf, width, height);
+                uint16_t *img = (uint16_t*)heap_caps_malloc(width*height*2, MALLOC_CAP_SPIRAM);
+                fread(img, 2, width*height, f);
+                
+                ili9341_write_frame_rectangleLE(320-width,240-height, width, height, img);
+                // wait_for_key(last_key);
+                heap_caps_free(img);
+				res = 1;
+            }
+//            else
+            //{
+                // printf("%X  Romart found: %s   (%dx%d) (INVALID SIZE)\n", crc, buf, width, height);
+                //res = 0;
+            //}
+            fclose(f);
+    }
+	return res;
+}
+
+
 void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
 {
     if (emu->files.count == 0)
@@ -141,65 +258,96 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
     uint32_t crc = emu->checksums[emu->selected];
     if (crc == 0)
     {
-        odroid_ui_draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
-        char *file = goemu_ui_choose_file_getfile(emu);
-        FILE *f = fopen(file, "rb");
-        if (f)
-        {
-            fseek(f, 0, SEEK_END);
-            int size = ftell(f) - emu->crc_offset;
-            fseek(f, emu->crc_offset, SEEK_SET);
-            int buf_size = 32768; //4096;
-            unsigned char *buffer = (unsigned char*)heap_caps_malloc(buf_size, MALLOC_CAP_SPIRAM);
-            if (buffer)
-            {
-                uint32_t crc_tmp = 0;
-                bool abort = false;
-                while (true)
-                {
-                    odroid_input_gamepad_read(joystick);
-                    if (joystick->values[ODROID_INPUT_A] ||
-                        joystick->values[ODROID_INPUT_START] ||
-                        joystick->values[ODROID_INPUT_SELECT] ||
-                        joystick->values[ODROID_INPUT_LEFT] ||
-                        joystick->values[ODROID_INPUT_RIGHT] ||
-                        joystick->values[ODROID_INPUT_UP] ||
-                        joystick->values[ODROID_INPUT_DOWN]) {
-                        abort = true;
-                        break;
-                    }
-                    int count = fread(buffer, 1, buf_size, f);
-                    crc_tmp = crc32_le(crc_tmp, buffer, count);
-                    if (count != buf_size)
-                    {
-                        break;
-                    }
-                }
-                heap_caps_free(buffer);
-                fclose(f);
-                if (!abort)
-                {
-                    // printf("%X  %s ; Size: %d\n", crc_tmp, file, size);
-                    crc = crc_tmp;
-                }
-            } else
-            {
-                printf("Buffer alloc failed: Size: %d; File: %s\n",size, file);
-                fclose(f);
-                crc = 1;
-            }
-        } else
-        {
-            printf("File not found: %s\n", file);
-            crc = 1;
-        }
-        free(file);
+		/*
+char *artfile = goemu_ui_choose_file_getfile_plus_extension(emu,"art");
+		printf("Loking for %s\r\n", artfile);
+
+		// Try to load...
+		if(load_and_draw_art(artfile)){
+			free(artfile);
+		}
+		else
+*/
+
+		// Check if there is an gif file in the same folder
+		char *giffile = goemu_ui_choose_file_getfile_plus_extension(emu,"gif");
+		printf("Loking for %s\r\n", giffile);
+
+		// Try to load...
+		if(load_and_draw_gif(giffile)){
+			free(giffile);
+		}
+		else
+		{
+			printf("Artfile not found, calculating CRC...\r\n");
+			free(giffile);
+		
+			odroid_ui_draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
+			char *file = goemu_ui_choose_file_getfile(emu);
+			FILE *f = fopen(file, "rb");
+			if (f)
+			{
+				fseek(f, 0, SEEK_END);
+				int size = ftell(f) - emu->crc_offset;
+				fseek(f, emu->crc_offset, SEEK_SET);
+				int buf_size = 32768; //4096;
+				unsigned char *buffer = (unsigned char*)heap_caps_malloc(buf_size, MALLOC_CAP_SPIRAM);
+				if (buffer)
+				{
+					uint32_t crc_tmp = 0;
+					bool abort = false;
+					while (true)
+					{
+						odroid_input_gamepad_read(joystick);
+						if (joystick->values[ODROID_INPUT_A] ||
+							joystick->values[ODROID_INPUT_START] ||
+							joystick->values[ODROID_INPUT_SELECT] ||
+							joystick->values[ODROID_INPUT_LEFT] ||
+							joystick->values[ODROID_INPUT_RIGHT] ||
+							joystick->values[ODROID_INPUT_UP] ||
+							joystick->values[ODROID_INPUT_DOWN]) {
+							abort = true;
+							break;
+						}
+						int count = fread(buffer, 1, buf_size, f);
+						crc_tmp = crc32_le(crc_tmp, buffer, count);
+						if (count != buf_size)
+						{
+							break;
+						}
+					}
+					heap_caps_free(buffer);
+					fclose(f);
+					if (!abort)
+					{
+						// printf("%X  %s ; Size: %d\n", crc_tmp, file, size);
+						crc = crc_tmp;
+					}
+				} else
+				{
+					printf("Buffer alloc failed: Size: %d; File: %s\n",size, file);
+					fclose(f);
+					crc = 1;
+				}
+			} else
+			{
+				printf("File not found: %s\n", file);
+				crc = 1;
+			}
+			free(file);
+		}
     }
     if (crc > 0)
     {
         char buf[128], buf_crc[10];
         sprintf(buf_crc, "%X", crc);
         sprintf(buf, "/sd/romart/%s/%c/%s.art", emu->path_metadata, buf_crc[0], buf_crc);
+		
+		if(!load_and_draw_art(buf)){ 
+			crc = 1; 
+		} 
+
+/*		
         FILE *f = fopen(buf, "rb");
         if (f)
         {
@@ -227,7 +375,9 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
             // printf("%X  Romart not found: %s\n", crc, buf);
             crc = 1;
         }
+		*/
     }
+	
     if (crc == 1)
     {
         odroid_ui_draw_chars(320-8*12, (6)*8, 12, "No art found", C_RED, C_BLACK);

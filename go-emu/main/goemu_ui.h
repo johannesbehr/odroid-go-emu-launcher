@@ -21,3 +21,4 @@ void goemu_ui_choose_file_init(goemu_emu_data_entry *emu);
 void goemu_ui_choose_file_input(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick, int *last_key);
 void goemu_ui_choose_file_draw(goemu_emu_data_entry *emu);
 char *goemu_ui_choose_file_getfile(goemu_emu_data_entry *emu);
+char *goemu_ui_choose_file_getfile_plus_extension(goemu_emu_data_entry *emu, char* extension);
