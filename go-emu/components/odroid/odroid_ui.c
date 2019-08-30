@@ -16,11 +16,17 @@
 #include <stdio.h>
 #include <string.h>
 #include "font8x8_basic.h"
+#include "font.h"
 
 bool forceConsoleReset = false;
 bool odroid_ui_menu_opened;
 static bool short_cut_menu_open = false;
 uint16_t *odroid_ui_framebuffer = NULL;
+
+uint16_t odroid_ui_framebuffer_width = 320;
+uint16_t odroid_ui_framebuffer_height = 12;
+
+
 
 char buf[42];
 
@@ -271,14 +277,14 @@ void odroid_ui_volume_set(bool up)
 }
 
 void odroid_ui_clean_draw_buffer() {
-	int size = 320 * 8 * sizeof(uint16_t);
+	int size = odroid_ui_framebuffer_width * odroid_ui_framebuffer_height * sizeof(uint16_t);
 	memset(odroid_ui_framebuffer, 0, size);
 }
 
 void prepare() {
 	if (odroid_ui_framebuffer) return;
 	printf("odroid_ui_menu: SETUP buffer\n");
-	int size = 320 * 8 * sizeof(uint16_t);
+	int size = odroid_ui_framebuffer_width * odroid_ui_framebuffer_height * sizeof(uint16_t);
     odroid_ui_framebuffer = (uint16_t *)malloc(size);
 	if (!odroid_ui_framebuffer) abort();
 	odroid_ui_clean_draw_buffer();
@@ -358,10 +364,38 @@ void draw_char(uint16_t x, uint16_t y, char c, uint16_t color) {
 	ili9341_write_frame_rectangleLE(x, y, 8, 8, odroid_ui_framebuffer);
 }
 
+void odroid_ui_clear_framebuffer(uint16_t width, uint16_t height, uint16_t color_bg){
+/*
+	uint16_t* image = (uint16_t*)image_background + (row * 320);
+	for(int i = 0; i< width * height; i++){
+			framebuffer[i] = *image;
+			image++;
+	}*/
+//	memset(odroid_ui_framebuffer, 0, width * height * 2);
+	for(int i = 0; i< width * height; i++){
+			odroid_ui_framebuffer[i] = color_bg;
+	}
+}
+
 void odroid_ui_draw_chars(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg) {
 	render(0, 0, width, text, color, color_bg);
 	ili9341_write_frame_rectangleLE(x, y, width * 8, 8, odroid_ui_framebuffer);
 }
+
+void odroid_ui_draw_chars2(uint16_t x, uint16_t y,  char *text, uint16_t length, uint16_t color, uint16_t color_bg) {
+	
+	set_drawbuffer(odroid_ui_framebuffer,  odroid_ui_framebuffer_width, odroid_ui_framebuffer_height);
+	
+	odroid_ui_clear_framebuffer(odroid_ui_framebuffer_width, odroid_ui_framebuffer_height, color_bg);
+	if(length>0){
+		int text_height = FntLineHeight();
+		int text_width = FntLineWidth(text,length);
+		//draw_text((odroid_ui_framebuffer_width-text_width)/2, text_height - 4, text, length, color);
+		draw_text(0, text_height - 4, text, length, color);
+	}
+	ili9341_write_frame_rectangleLE(x, y,odroid_ui_framebuffer_width, odroid_ui_framebuffer_height, odroid_ui_framebuffer);
+}
+
 
 void odroid_ui_draw_chars_ext(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg, int y_from, int y_to) {
     if (y_from>=8 || y_to ==0) return;

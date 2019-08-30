@@ -91,9 +91,12 @@ extern bool config_speedup;
 extern bool forceConsoleReset;
 extern bool odroid_ui_menu_opened;
 extern uint16_t *odroid_ui_framebuffer;
+extern uint16_t odroid_ui_framebuffer_height;
+
 
 void odroid_ui_clean_draw_buffer();
 void odroid_ui_draw_chars(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg);
+void odroid_ui_draw_chars2(uint16_t x, uint16_t y,  char *text, uint16_t length, uint16_t color, uint16_t color_bg);
 void odroid_ui_draw_chars_ext(uint16_t x, uint16_t y, uint16_t width, char *text, uint16_t color, uint16_t color_bg, int y_from, int y_to);
 void odroid_ui_wait_for_key(int key, bool pressed);
 bool odroid_ui_menu(bool restart_menu);

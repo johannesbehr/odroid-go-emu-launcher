@@ -26,6 +26,9 @@
 
 #define ROM_PATH "/sd/roms"
 
+
+
+
 void goemu_ui_choose_file_init(goemu_emu_data_entry *emu) {
     if (emu->initialized)
     {
@@ -150,6 +153,32 @@ void goemu_ui_choose_file_input(goemu_emu_data_entry *emu, odroid_gamepad_state 
     *last_key_ = last_key;
 }
 
+/// Make the game name nicer by cutting at brackets or (last) dot.
+int cut_game_name(char *game){
+
+	char *dot = strrchr(game,'.'); 
+	char *brack1 = strchr(game,'['); 
+	char *brack2 = strchr(game,'('); 
+	
+	int len = strlen(game);
+	if(dot!=NULL && dot-game<len ){
+		len = dot-game;
+	}
+	if(brack1!=NULL && brack1-game<len ){
+		len = brack1-game;
+		if(game[len-1]==' '){
+			len--;
+		}
+	}
+	if(brack2!=NULL && brack2-game<len ){
+		len = brack2-game;
+		if(game[len-1]==' '){
+			len--;
+		}
+	}
+	return len;
+}
+
 void goemu_ui_choose_file_draw(goemu_emu_data_entry *emu)
 {
     int count = emu->files.count;
@@ -157,20 +186,69 @@ void goemu_ui_choose_file_draw(goemu_emu_data_entry *emu)
     int x = 0;
     int lines = 30 - 7;
     int y_offset = 7*8;
-    
-    for (int i = 0;i < lines; i++) {
-        int y = y_offset + i * 8;
-        int entry = emu->selected + i - lines/2;
-        char *text;
-        if (entry>=0 && entry < count)
-        {
-            text = (char*)entries_refs[entry];
-        } else
-        {
-            text = " ";
-        }
-        odroid_ui_draw_chars(x, y, 40, text, entry==emu->selected?color_selected:color_default, color_bg_default);
-    }
+	int y,entry;
+    char *text;
+	
+	char *dot = NULL;
+	uint8_t options_hide_extensions = true;
+	uint8_t options_paging = true;
+	        
+			
+	if(options_paging){
+		
+		y_offset+=8;
+		int rows_per_page = (240 - y_offset) / (odroid_ui_framebuffer_height);
+		int page = emu->selected / rows_per_page;
+		
+		
+		for (int i = 0;i < rows_per_page + 1; i++) {
+			y = y_offset + i * (odroid_ui_framebuffer_height);
+			entry = i + (page * rows_per_page);//selected + i - 15;
+			int length = 1;
+			if (entry>=0 && entry < count && i < rows_per_page)
+			{
+				text = (char*)entries_refs[entry];
+				if(options_hide_extensions){
+					length = cut_game_name(text);
+				}else{
+					length = strlen(text);
+				}
+			}else{
+				text = " ";
+			}
+			
+			odroid_ui_draw_chars2(x, y, text, length, entry==emu->selected?C_YELLOW:C_WHITE, color_bg_default);
+		}
+	}else{
+		for (int i = 0;i < lines; i++) {
+			y = y_offset + i * 8;
+			entry = emu->selected + i - lines/2;
+						
+			if (entry>=0 && entry < count)
+			{
+				text = (char*)entries_refs[entry];
+				if(options_hide_extensions){
+					// Hide extension
+					dot = strrchr(text,'.'); 
+					*dot = '\0';
+				}
+			} else
+			{
+				text = " ";
+			}
+		
+			odroid_ui_draw_chars(x, y, 40, text, entry==emu->selected?color_selected:color_default, color_bg_default);
+			
+			// Restore extension
+			if(dot!=NULL){
+				*dot = '.';
+			}
+		}
+	}
+	
+	
+	
+	
         
 }
 
