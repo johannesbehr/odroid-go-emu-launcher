@@ -103,7 +103,7 @@ void odroid_ui_enter_loop();
 bool odroid_ui_ask(const char *text);
 int odroid_ui_ask_v2(const char *text, uint16_t color_fg, uint16_t color_bg, int selected_initial);
 bool odroid_ui_error(const char *text);
-void odroid_ui_battery_draw(int x, int y, int max, int value);
+void odroid_ui_battery_draw(int x_, int y_, int max, int value, uint16_t color_border,  uint16_t color_background)
 
 #ifdef ODROID_UI_EMU_SAVE
 void QuickSaveSetBuffer(void* data);

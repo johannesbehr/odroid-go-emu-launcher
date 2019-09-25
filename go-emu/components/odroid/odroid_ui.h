@@ -106,7 +106,7 @@ void odroid_ui_enter_loop();
 bool odroid_ui_ask(const char *text);
 int odroid_ui_ask_v2(const char *text, uint16_t color_fg, uint16_t color_bg, int selected_initial);
 bool odroid_ui_error(const char *text);
-void odroid_ui_battery_draw(int x, int y, int max, int value);
+void odroid_ui_battery_draw(int x, int y, int max, int value, uint16_t color_border, uint16_t color_background);
 
 #ifdef ODROID_UI_EMU_SAVE
 void QuickSaveSetBuffer(void* data);
@@ -254,7 +254,7 @@ void DoStartupPost();
 #define ODROID_UI_BATTERY_DRAW(x,y)                                \
     if (battery_draw)                                              \
     {                                                              \
-        odroid_ui_battery_draw(x ,y, 20, battery_percentage_old);  \
+        odroid_ui_battery_draw(x ,y, 20, battery_percentage_old, emu->header_forecolor, emu->header_backcolor );  \
         battery_draw = false;                                      \
     }
 

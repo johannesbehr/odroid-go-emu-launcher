@@ -38,6 +38,35 @@ void goemu_util_readdir(goemu_util_strings *rc, const char *path, const char *ex
        count = 0;
        count_chars = 0;
     }
+	
+	// Split extensions
+	char extensionbuffer[100];
+	// Copy string to new string
+	sprintf(extensionbuffer, "%s", ext);
+	int extensions[10];
+	int extension_cnt = 1;
+	
+	extensions[0] = extensionbuffer;
+	
+	// replace all ; with \0
+	char *pos;
+	pos = extensionbuffer;
+	printf("pos as string: %s\r\n",pos);
+	printf("pos(1): %p\r\n",pos);
+	
+	while((pos=strchr(pos + 1, ';'))!=NULL){
+		printf("pos(x): %p\r\n",pos);
+		
+		extensions[extension_cnt]=pos+1;
+		*pos = '\0';
+		extension_cnt++;
+	}
+	
+	printf("Found %d extensions: \r\n",extension_cnt);
+	for(int ii = 0; ii<extension_cnt; ii++){
+		printf("%s\r\n", (char*)extensions[ii]);
+	}
+	
     while ((in_file = readdir(dir))) 
     {
         if (!strcmp (in_file->d_name, "."))
@@ -48,9 +77,29 @@ void goemu_util_readdir(goemu_util_strings *rc, const char *path, const char *ex
             continue;
         if (in_file->d_name[0] == '.' && in_file->d_name[1] == '_')    
             continue;
-        if (strcasecmp(ext, &in_file->d_name[strlen(in_file->d_name)-strlen(ext)]) != 0)
-            continue;
+		
+		// Search ';' in ext
+		// Split at it
+		
+		// For each extension...
+		
+			bool found = 0;
+			char* ext2;
+	for(int ii = 0; ii<extension_cnt; ii++){
+		ext2 = (char*)extensions[ii];
+		if(strcasecmp(ext2, &in_file->d_name[strlen(in_file->d_name)-strlen(ext2)]) == 0){
+			found = 1;
+		}
+	}
+		
+		
+	if(found == 0) continue;
+//        if (strcasecmp(ext, &in_file->d_name[strlen(in_file->d_name)-strlen(ext)]) != 0)
+ //           continue;
         
+		
+		
+		
         if (entries_refs) {
            entries_refs[count] = ((uint32_t)entries_buffer) + count_chars;
            strcpy(&entries_buffer[count_chars],in_file->d_name);

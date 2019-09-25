@@ -12,11 +12,18 @@ struct goemu_emu_data_entry {
     char path_metadata[32];
     char ext[8];
     uint16_t crc_offset;
+	uint16_t header_forecolor;
+	uint16_t header_backcolor;
+	
     bool available;
     uint8_t nr;
     
-    uint16_t* image_logo;
     uint16_t* image_header;
+    uint16_t image_header_width;
+    uint16_t image_header_height;
+    uint16_t* image_logo;
+    uint16_t image_logo_width;
+    uint16_t image_logo_height;
 
     goemu_util_strings files;
     uint32_t *checksums;

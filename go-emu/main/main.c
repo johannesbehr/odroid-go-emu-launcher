@@ -252,7 +252,7 @@ void draw_cover(goemu_emu_data_entry *emu, odroid_gamepad_state *joystick)
 {
     if (emu->files.count == 0)
     {
-        odroid_ui_draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8 + 2, 12, " ", C_RED, C_BLACK);
         return;
     }
     uint32_t crc = emu->checksums[emu->selected];
@@ -282,7 +282,7 @@ char *artfile = goemu_ui_choose_file_getfile_plus_extension(emu,"art");
 			printf("Artfile not found, calculating CRC...\r\n");
 			free(giffile);
 		
-			odroid_ui_draw_chars(320-8*12, (6)*8, 12, "       CRC32", C_GREEN, C_BLACK);
+			odroid_ui_draw_chars(320-8*12, (6)*8 + 2, 12, "       CRC32", C_GREEN, C_BLACK);
 			char *file = goemu_ui_choose_file_getfile(emu);
 			FILE *f = fopen(file, "rb");
 			if (f)
@@ -380,10 +380,10 @@ char *artfile = goemu_ui_choose_file_getfile_plus_extension(emu,"art");
 	
     if (crc == 1)
     {
-        odroid_ui_draw_chars(320-8*12, (6)*8, 12, "No art found", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8 + 2, 12, "No art found", C_RED,C_BLACK);
     } else
     {
-        odroid_ui_draw_chars(320-8*12, (6)*8, 12, " ", C_RED, C_BLACK);
+        odroid_ui_draw_chars(320-8*12, (6)*8 + 2, 12, " ", C_RED, C_BLACK);
     }
     emu->checksums[emu->selected] = crc;
 }
@@ -407,7 +407,7 @@ void goemu_loop()
     char *selected_file = odroid_settings_RomFilePath_get();
     if (selected_file)
     {
-        int i;
+        int i,j;
         for ( i = strlen(selected_file) - 1; i>=0;i--)
         {
             if (selected_file[i] == '.') break;
@@ -416,13 +416,42 @@ void goemu_loop()
         if (i > 0)
         {
             char *ext = &selected_file[i+1];
+			
+			char extensionbuffer[100];
+			int extensions[10];
+			int extension_cnt;
+			char *pos,*ext2;
+			for(i=0;i<10;i++ ){
+				extensions[i]=0;
+			}
+			
+			
             for ( i = 0; i < all_emus->count; i++)
             {
                 goemu_emu_data_entry *p = &all_emus->entries[i];
-                if (strcmp(p->ext, ext)==0)
-                {
-                    selected_emu = i;
-                }
+				
+				// Split extensions for current emu
+				sprintf(extensionbuffer, "%s", p->ext);
+				extension_cnt = 1;
+				extensions[0] = extensionbuffer;
+				pos = extensionbuffer;
+				while((pos=strchr(pos + 1, ';'))!=NULL){
+					extensions[extension_cnt]=pos+1;
+					*pos = '\0';
+					extension_cnt++;
+				}
+				
+				for(j=0;j<extension_cnt;j++){
+					ext2 = (char*)extensions[j];
+					if (strcasecmp(ext2, ext)==0)
+					{
+						printf("Found matching Emu: %d",i);
+						selected_emu = i;
+						break;
+					}
+				}
+				
+                
             }
         }
     }
@@ -473,11 +502,22 @@ void goemu_loop()
             int y = 4;
             int x = 6 * 8;
             int length = 40 - 6;
-            odroid_ui_draw_chars(x, y*8, length, emu->system_name, color_selected, C_BLACK);
+
+			goemu_ui_choose_file_load(emu);
+			if (emu->image_logo)
+            {
+                ili9341_write_frame_rectangleLE(0,0, emu->image_logo_width, emu->image_logo_height, emu->image_logo);
+            }
+            if (emu->image_header)
+            {
+                ili9341_write_frame_rectangleLE(48,0, emu->image_header_width, emu->image_header_height, emu->image_header);
+            }            
+
+            odroid_ui_draw_chars(x, y*8, length, emu->system_name, emu->header_forecolor, emu->header_backcolor);
             bool first = !emu->initialized;
             if (first)
             {
-                odroid_ui_draw_chars(x, (y+1)*8, length, "Loading directory...", color_selected, C_BLACK);
+                odroid_ui_draw_chars(x, (y+1)*8, length, "Loading directory...", emu->header_forecolor, emu->header_backcolor);
                 // Workaround for 4GB sd card? If the last SD-card access failed, new one fails too? 
                 if (emu_last && emu_last->files.count>0)
                 {
@@ -486,21 +526,13 @@ void goemu_loop()
                     if (f) fclose(f);
                 }
             }
-            goemu_ui_choose_file_load(emu);
-            if (emu->image_logo)
-            {
-                ili9341_write_frame_rectangleLE(0,0, GOEMU_IMAGE_LOGO_WIDTH,GOEMU_IMAGE_LOGO_HEIGHT, emu->image_logo);
-            }
-            if (emu->image_header)
-            {
-                ili9341_write_frame_rectangleLE(48,0, GOEMU_IMAGE_HEADER_WIDTH, GOEMU_IMAGE_HEADER_HEIGHT, emu->image_header);
-            }            
+            
             goemu_ui_choose_file_init(emu);
             selected_emu_last = selected_emu;
             selected_last = -1;
             if (first)
             {
-                odroid_ui_draw_chars(x, (y+1)*8, length, " ", color_selected, C_BLACK);
+                odroid_ui_draw_chars(x, (y+1)*8, length, " ", color_selected, emu->header_backcolor);
             }
             char buf[40];
             if (emu->available)
@@ -511,13 +543,13 @@ void goemu_loop()
             {
                 sprintf(buf, "Games: %d - EMU not found '%s'", emu->files.count, emu->partition_name);
             }
-            odroid_ui_draw_chars(x, (y+1)*8, length, buf, color_selected, C_BLACK);
+			odroid_ui_draw_chars(x, (y+1)*8, length, buf, emu->header_forecolor, emu->header_backcolor);
             idle_counter = 0;
             battery_draw = true;
         }
         if (battery_draw)
         {
-            odroid_ui_battery_draw(320 - 23 ,1, 20, battery_percentage_old);
+            odroid_ui_battery_draw(320 - 23 ,1, 20, battery_percentage_old, emu->header_forecolor, emu->header_backcolor);
             battery_draw = false;
         }
         odroid_gamepad_state joystick;

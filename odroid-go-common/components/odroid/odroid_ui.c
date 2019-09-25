@@ -883,9 +883,9 @@ inline void odroid_ui_draw_rect(int x_, int y_, int width, int height, uint16_t 
 
 static int odroid_ui_battery_counter = 0;
 
-void odroid_ui_battery_draw(int x_, int y_, int max, int value)
+void odroid_ui_battery_draw(int x_, int y_, int max, int value, uint16_t color_border,  uint16_t color_background)
 {
-    uint16_t color_border = C_SILVER;
+    //uint16_t color_border = C_SILVER;
     int width = max+3;
     int height = 8;
     if (value<=0) value = 0;
@@ -906,7 +906,7 @@ void odroid_ui_battery_draw(int x_, int y_, int max, int value)
         }
         else
         {
-            odroid_ui_framebuffer[width-1 + y*width] = C_BLACK;
+            odroid_ui_framebuffer[width-1 + y*width] = color_background;
         }
     }
     int p = (100 * value)/max;

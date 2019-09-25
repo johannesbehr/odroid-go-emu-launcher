@@ -203,7 +203,7 @@ void goemu_ui_choose_file_draw(goemu_emu_data_entry *emu)
 		
 		for (int i = 0;i < rows_per_page + 1; i++) {
 			y = y_offset + i * (odroid_ui_framebuffer_height);
-			entry = i + (page * rows_per_page);//selected + i - 15;
+			entry = i + (page * rows_per_page);
 			int length = 1;
 			if (entry>=0 && entry < count && i < rows_per_page)
 			{
@@ -279,14 +279,16 @@ void goemu_ui_choose_file_load(goemu_emu_data_entry *emu)
 		gif = gd_open_gif(file);
 		if (gif) {
 			printf("Gif is: %dx%d\r\n", gif->width, gif->height);
-			if (gif->width==GOEMU_IMAGE_LOGO_WIDTH && gif->height==GOEMU_IMAGE_LOGO_HEIGHT){
+			//if (gif->width==GOEMU_IMAGE_LOGO_WIDTH && gif->height==GOEMU_IMAGE_LOGO_HEIGHT){
 				frame = heap_caps_malloc(gif->width*gif->height*2, MALLOC_CAP_SPIRAM);
 				emu->image_logo = (uint16_t*)frame;
+				emu->image_logo_width = gif->width;
+				emu->image_logo_height = gif->height;
 				int ret = gd_get_frame(gif);
 				if (ret != -1){
 					gd_render_frame(gif, frame);
 				}
-			}
+			//}
 			gd_close_gif(gif);
 		}else{
 			 printf("Image Logo '%s' not found\n", file);
@@ -317,14 +319,17 @@ void goemu_ui_choose_file_load(goemu_emu_data_entry *emu)
 		gif = gd_open_gif(file);
 		if (gif) {
 			printf("Gif is: %dx%d\r\n", gif->width, gif->height);
-			if (gif->width==GOEMU_IMAGE_HEADER_WIDTH && gif->height==GOEMU_IMAGE_HEADER_HEIGHT){
+			//if (gif->width==GOEMU_IMAGE_HEADER_WIDTH && gif->height==GOEMU_IMAGE_HEADER_HEIGHT){
 				frame = heap_caps_malloc(gif->width*gif->height*2, MALLOC_CAP_SPIRAM);
 				emu->image_header = (uint16_t*)frame;
+				emu->image_header_width = gif->width;
+				emu->image_header_height = gif->height;
+
 				int ret = gd_get_frame(gif);
 				if (ret != -1){
 					gd_render_frame(gif, frame);
 				}
-			}
+			//}
 			gd_close_gif(gif);
 		}else{
 			 printf("Image Header '%s' not found\n", file);

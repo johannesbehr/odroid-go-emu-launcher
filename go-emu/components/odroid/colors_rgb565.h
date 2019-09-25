@@ -125,6 +125,8 @@
 #define C_MINT_CREAM                   0xF7FE
 #define C_SLATE_GRAY                   0x7412
 #define C_LIGHT_SLATE_GRAY             0x7453
+#define C_SLATE_GREY                   0x7412
+#define C_LIGHT_SLATE_GREY             0x7453
 #define C_LIGHT_STEEL_BLUE             0xAE1B
 #define C_LAVENDER                     0xE73E
 #define C_FLORAL_WHITE                 0xFFDD
@@ -140,6 +142,10 @@
 #define C_DARK_GRAY                    0xAD55
 #define C_SILVER                       0xBDF7
 #define C_LIGHT_GRAY                   0xD69A
+#define C_DIM_GREY                     0x6B4D
+#define C_GREY                         0x8410
+#define C_DARK_GREY                    0xAD55
+#define C_LIGHT_GREY                   0xD69A
 #define C_GAINSBORO                    0xDEDB
 #define C_WHITE_SMOKE                  0xF7BE
 #define C_WHITE                        0xFFFF
